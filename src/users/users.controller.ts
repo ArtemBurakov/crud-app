@@ -1,28 +1,24 @@
 import {
-  Controller,
-  Get,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
   ParseIntPipe,
-  UsePipes,
-  ValidationPipe,
-  UseInterceptors,
-  ClassSerializerInterceptor,
+  Patch,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
-import { RoleGuard } from 'src/common/guards/userRole.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserUpdateGuard } from 'src/common/guards/userUpdate.guard';
-import { ApiBearerAuth, ApiBody, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { UserUpdateGuard } from '../common/guards/userUpdate.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RoleGuard } from '../common/guards/userRole.guard';
+import { AccessTokenGuard } from '../common/guards/accessToken.guard';
 
 @ApiTags('users')
 @Controller('users')
-@UseInterceptors(ClassSerializerInterceptor)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -37,11 +33,10 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
-  @ApiBearerAuth('jwt')
   @Patch(':id')
-  @UsePipes(ValidationPipe)
-  @UseGuards(AccessTokenGuard, UserUpdateGuard)
+  @ApiBearerAuth('jwt')
   @ApiBody({ type: UpdateUserDto })
+  @UseGuards(AccessTokenGuard, UserUpdateGuard)
   @ApiResponse({ status: 400, description: 'Invalid request data.' })
   update(
     @Param('id', ParseIntPipe) id: string,
@@ -50,9 +45,9 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
-  @ApiBearerAuth('jwt')
   @Delete(':id')
   @Roles('admin')
+  @ApiBearerAuth('jwt')
   @UseGuards(AccessTokenGuard, RoleGuard)
   @ApiResponse({
     status: 401,

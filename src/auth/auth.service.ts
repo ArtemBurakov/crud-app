@@ -1,11 +1,11 @@
-import * as argon2 from 'argon2';
 import {
   BadRequestException,
-  Injectable,
   ForbiddenException,
+  Injectable,
 } from '@nestjs/common';
+import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+
 import { AuthDto } from './dto/auth.dto';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
@@ -15,12 +15,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private configService: ConfigService,
   ) {}
-
-  hashData(data: string) {
-    return argon2.hash(data);
-  }
 
   async signUp(createUserDto: CreateUserDto) {
     const userExists = await this.usersService.findByEmail(createUserDto.email);
@@ -32,14 +27,7 @@ export class AuthService {
       password: hash,
     });
 
-    const tokens = await this.getTokens(
-      newUser.id,
-      newUser.username,
-      newUser.role,
-    );
-    await this.updateRefreshToken(newUser.id, tokens.refreshToken);
-
-    return tokens;
+    return this.generateTokens(newUser.id, newUser.username, newUser.role);
   }
 
   async signIn(data: AuthDto) {
@@ -50,52 +38,11 @@ export class AuthService {
     if (!passwordMatches)
       throw new BadRequestException('Password is incorrect');
 
-    const tokens = await this.getTokens(user.id, user.username, user.role);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
-    return tokens;
+    return this.generateTokens(user.id, user.username, user.role);
   }
 
   async logout(userId: number) {
     return this.usersService.update(userId, { refreshToken: null });
-  }
-
-  async updateRefreshToken(userId: number, refreshToken: string) {
-    const hashedRefreshToken = await this.hashData(refreshToken);
-    await this.usersService.update(userId, {
-      refreshToken: hashedRefreshToken,
-    });
-  }
-
-  async getTokens(userId: number, email: string, role: string) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          email,
-          role,
-        },
-        {
-          secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-          expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRATION'),
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          email,
-          role,
-        },
-        {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-          expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION'),
-        },
-      ),
-    ]);
-
-    return {
-      accessToken,
-      refreshToken,
-    };
   }
 
   async refreshTokens(userId: number, refreshToken: string) {
@@ -109,9 +56,62 @@ export class AuthService {
     );
     if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.getTokens(user.id, user.username, user.role);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    return this.generateTokens(user.id, user.username, user.role);
+  }
 
-    return tokens;
+  private async generateTokens(userId: number, email: string, role: string) {
+    const accessToken = await this.generateToken(
+      userId,
+      email,
+      role,
+      process.env.JWT_ACCESS_SECRET,
+      process.env.JWT_ACCESS_EXPIRATION,
+    );
+
+    const refreshToken = await this.generateToken(
+      userId,
+      email,
+      role,
+      process.env.JWT_REFRESH_SECRET,
+      process.env.JWT_ACCESS_EXPIRATION,
+    );
+
+    await this.updateRefreshToken(userId, refreshToken);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  private async updateRefreshToken(userId: number, refreshToken: string) {
+    const hashedRefreshToken = await this.hashData(refreshToken);
+    await this.usersService.update(userId, {
+      refreshToken: hashedRefreshToken,
+    });
+  }
+
+  private hashData(data: string) {
+    return argon2.hash(data);
+  }
+
+  private generateToken(
+    userId: number,
+    email: string,
+    role: string,
+    secret: string,
+    expiresIn: string,
+  ) {
+    return this.jwtService.signAsync(
+      {
+        sub: userId,
+        email,
+        role,
+      },
+      {
+        secret,
+        expiresIn,
+      },
+    );
   }
 }

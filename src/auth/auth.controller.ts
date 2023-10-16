@@ -1,20 +1,12 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Req,
-  UsePipes,
-  ValidationPipe,
-  UseGuards,
-} from '@nestjs/common';
 import { Request } from 'express';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { AuthDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { RefreshTokenGuard } from 'src/common/guards/refreshToken.guard';
-import { ApiBody, ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
+import { RefreshTokenGuard } from 'src/common/guards/refreshToken.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -22,7 +14,6 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('signup')
-  @UsePipes(ValidationPipe)
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
@@ -33,7 +24,6 @@ export class AuthController {
   }
 
   @Post('signin')
-  @UsePipes(ValidationPipe)
   @ApiBody({ type: AuthDto })
   @ApiResponse({ status: 201, description: 'Authentication successful.' })
   signin(@Body() data: AuthDto) {

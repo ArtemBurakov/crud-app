@@ -1,13 +1,14 @@
 import {
   Column,
-  Entity,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
 import { Exclude } from 'class-transformer';
+
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Post {

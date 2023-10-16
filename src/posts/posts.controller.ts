@@ -1,37 +1,32 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
   ParseIntPipe,
-  UsePipes,
-  ValidationPipe,
-  UseGuards,
+  Patch,
+  Post,
   Req,
-  UseInterceptors,
-  ClassSerializerInterceptor,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { PostUpdateGuard } from 'src/common/guards/postUpdate.guard';
-import { ApiBearerAuth, ApiBody, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 
 @ApiTags('posts')
 @Controller('posts')
-@UseInterceptors(ClassSerializerInterceptor)
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  @UsePipes(ValidationPipe)
-  @UseGuards(AccessTokenGuard)
   @ApiBearerAuth('jwt')
+  @UseGuards(AccessTokenGuard)
   @ApiBody({ type: CreatePostDto })
   @ApiResponse({
     status: 201,
@@ -62,10 +57,9 @@ export class PostsController {
   }
 
   @Patch(':id')
-  @UsePipes(ValidationPipe)
-  @UseGuards(AccessTokenGuard, PostUpdateGuard)
   @ApiBearerAuth('jwt')
   @ApiBody({ type: UpdatePostDto })
+  @UseGuards(AccessTokenGuard, PostUpdateGuard)
   @ApiResponse({
     status: 200,
     description: 'The post has been successfully updated.',
@@ -80,8 +74,8 @@ export class PostsController {
   }
 
   @Delete(':id')
-  @UseGuards(AccessTokenGuard, PostUpdateGuard)
   @ApiBearerAuth('jwt')
+  @UseGuards(AccessTokenGuard, PostUpdateGuard)
   @ApiResponse({
     status: 204,
     description: 'The post has been successfully deleted.',
