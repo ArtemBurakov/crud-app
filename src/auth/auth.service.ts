@@ -73,7 +73,7 @@ export class AuthService {
       email,
       role,
       process.env.JWT_REFRESH_SECRET,
-      process.env.JWT_ACCESS_EXPIRATION,
+      process.env.JWT_REFRESH_EXPIRATION,
     );
 
     await this.updateRefreshToken(userId, refreshToken);

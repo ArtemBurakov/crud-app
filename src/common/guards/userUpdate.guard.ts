@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UserUpdateGuard implements CanActivate {
@@ -9,8 +9,6 @@ export class UserUpdateGuard implements CanActivate {
 
     if (userFromJwt.role === 'admin') return true;
 
-    if (userFromJwt.sub === routeId) return true;
-
-    return false;
+    return userFromJwt.sub === routeId;
   }
 }
